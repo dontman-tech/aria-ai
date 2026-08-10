@@ -44,7 +44,7 @@
             android:fontFamily="monospace" />
 
         <!-- Voice listening toggle -->
-        <com.google.android.material.switchmaterial.SwitchMaterial
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/voiceSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -101,7 +101,7 @@
             android:layout_marginBottom="8dp"
             android:text="Grant All Permissions"
             android:textSize="13sp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            style="@style/Widget.AppCompat.Button.Borderless.Colored" />
 
         <Button
             android:id="@+id/storagePermButton"
@@ -110,7 +110,7 @@
             android:layout_marginBottom="8dp"
             android:text="Grant File Access (All Files)"
             android:textSize="13sp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            style="@style/Widget.AppCompat.Button.Borderless.Colored" />
 
         <Button
             android:id="@+id/settingsPermButton"
@@ -119,7 +119,7 @@
             android:layout_marginBottom="32dp"
             android:text="Grant Write Settings (Brightness)"
             android:textSize="13sp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            style="@style/Widget.AppCompat.Button.Borderless.Colored" />
 
         <!-- Info text -->
         <TextView

@@ -32,9 +32,9 @@ import java.util.Locale
 class DeviceController(private val context: Context) {
 
     private val TAG = "ARIA-Device"
-    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
-    private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+    private val audioManager: AudioManager? = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+    private val wifiManager: WifiManager? = context.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+    private val powerManager: PowerManager? = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
     private var cameraManager: CameraManager? = null
     private var cameraId: String? = null
     private var flashOn = false
@@ -72,8 +72,10 @@ class DeviceController(private val context: Context) {
     fun toggleWifi(state: String): String {
         return try {
             val on = state == "on"
+            val mgr = wifiManager
+            if (mgr == null) return jsonError("wifi_toggle", "WifiManager unavailable")
             @Suppress("DEPRECATION")
-            wifiManager.isWifiEnabled = on
+            mgr.isWifiEnabled = on
             json { put("wifi", if (on) "on" else "off"); put("success", true) }
         } catch (e: SecurityException) {
             jsonError("wifi_toggle", "Permission denied. Enable WRITE_SETTINGS or use Android settings.")
@@ -172,9 +174,11 @@ class DeviceController(private val context: Context) {
 
     fun setVolume(level: Int): String {
         return try {
-            val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            val mgr = audioManager
+            if (mgr == null) return jsonError("volume", "AudioManager unavailable")
+            val maxVol = mgr.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
             val vol = (level.toDouble() / 100.0 * maxVol).toInt().coerceIn(0, maxVol)
-            audioManager.setStreamVolume(
+            mgr.setStreamVolume(
                 AudioManager.STREAM_MUSIC,
                 vol,
                 AudioManager.FLAG_SHOW_UI

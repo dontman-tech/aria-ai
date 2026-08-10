@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ARIA" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <style name="Theme.ARIA" parent="Theme.AppCompat.DayNight.DarkActionBar">
         <item name="colorPrimary">@color/aria_cyan</item>
-        <item name="colorPrimaryVariant">@color/aria_cyan_dark</item>
-        <item name="colorOnPrimary">@color/aria_bg_dark</item>
-        <item name="colorSecondary">@color/aria_cyan</item>
-        <item name="colorOnSecondary">@color/aria_bg_dark</item>
+        <item name="colorPrimaryDark">@color/aria_cyan_dark</item>
+        <item name="colorAccent">@color/aria_cyan</item>
         <item name="android:windowBackground">@color/aria_bg_dark</item>
         <item name="android:statusBarColor">@color/aria_bg_dark</item>
         <item name="android:navigationBarColor">@color/aria_bg_dark</item>

@@ -1,6 +1,7 @@
 package com.dontmantech.aria
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -9,18 +10,18 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
-import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var statusText: TextView
-    private lateinit var voiceSwitch: Switch
+    private lateinit var voiceSwitch: SwitchCompat
     private lateinit var startButton: Button
     private lateinit var stopButton: Button
     private lateinit var permButton: Button
@@ -80,6 +81,17 @@ class MainActivity : AppCompatActivity() {
 
         // Check initial permission status
         checkPermissions()
+
+        // If the app crashed on a previous launch, surface the stack trace so we can debug.
+        val crashPrefs = getSharedPreferences("aria_crash", Context.MODE_PRIVATE)
+        val lastCrash = crashPrefs.getString("last_crash", null)
+        if (!lastCrash.isNullOrEmpty()) {
+            val time = crashPrefs.getLong("last_crash_time", 0)
+            val ago = (System.currentTimeMillis() - time) / 1000
+            updateStatus("Previous crash detected (${ago}s ago):\n\n$lastCrash\n\nThis report has been saved. Clearing it now.")
+            // Clear it so it only shows once.
+            crashPrefs.edit().clear().apply()
+        }
 
         // Request all permissions button
         permButton.setOnClickListener {
