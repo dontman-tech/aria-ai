@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ARIA" parent="Theme.MaterialComponents.DarkActionBar">
+    <style name="Theme.ARIA" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <item name="colorPrimary">@color/aria_cyan</item>
         <item name="colorPrimaryVariant">@color/aria_cyan_dark</item>
         <item name="colorOnPrimary">@color/aria_bg_dark</item>

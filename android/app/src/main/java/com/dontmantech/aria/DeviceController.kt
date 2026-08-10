@@ -55,19 +55,18 @@ class DeviceController(private val context: Context) {
         put("status", "online")
         put("app", "aria-companion")
         put("version", "1.0")
-        put("device", deviceInfo().toString())
+        put("model", android.os.Build.MODEL)
+        put("android_version", android.os.Build.VERSION.RELEASE)
     }
 
-    fun deviceInfo(): JSONObject {
+    fun deviceInfo(): String = json {
+        put("model", android.os.Build.MODEL)
+        put("manufacturer", android.os.Build.MANUFACTURER)
+        put("brand", android.os.Build.BRAND)
+        put("android_version", android.os.Build.VERSION.RELEASE)
+        put("sdk", android.os.Build.VERSION.SDK_INT)
         val pm = context.packageManager
-        return json {
-            put("model", android.os.Build.MODEL)
-            put("manufacturer", android.os.Build.MANUFACTURER)
-            put("brand", android.os.Build.BRAND)
-            put("android_version", android.os.Build.VERSION.RELEASE)
-            put("sdk", android.os.Build.VERSION.SDK_INT)
-            put("app_version", pm.getPackageInfo(context.packageName, 0)?.versionName ?: "unknown")
-        }
+        put("app_version", pm.getPackageInfo(context.packageName, 0)?.versionName ?: "unknown")
     }
 
     fun toggleWifi(state: String): String {
@@ -297,7 +296,7 @@ class DeviceController(private val context: Context) {
             val files = dir.listFiles() ?: emptyArray()
             val arr = org.json.JSONArray()
             for (f in files) {
-                arr.put(json {
+                arr.put(jsonObject {
                     put("name", f.name)
                     put("path", f.absolutePath)
                     put("type", if (f.isDirectory) "dir" else "file")
@@ -393,7 +392,7 @@ class DeviceController(private val context: Context) {
             val results = mutableListOf<JSONObject>()
             dir.walkTopDown().forEach { f ->
                 if (f.name.contains(query, ignoreCase = true)) {
-                    results.add(json {
+                    results.add(jsonObject {
                         put("name", f.name)
                         put("path", f.absolutePath)
                         put("type", if (f.isDirectory) "dir" else "file")
@@ -421,8 +420,11 @@ class DeviceController(private val context: Context) {
 
     // --- Helpers ---
 
-    private inline fun json(init: JSONObject.() -> Unit): JSONObject =
+    private inline fun jsonObject(init: JSONObject.() -> Unit): JSONObject =
         JSONObject().apply(init)
+
+    private inline fun json(init: JSONObject.() -> Unit): String =
+        JSONObject().apply(init).toString()
 
     private fun jsonError(action: String, message: String): String {
         return JSONObject()

@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer circle arc (HUD ring) -->
+    <path
+        android:strokeColor="@color/aria_cyan"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,18 A36,36 0 1,1 53.99,18" />
+    <!-- Inner circle arc -->
+    <path
+        android:strokeColor="@color/aria_cyan_dark"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,28 A26,26 0 1,1 53.99,28" />
+    <!-- Letter A -->
+    <path
+        android:fillColor="@color/aria_cyan"
+        android:pathData="M54,38 L40,70 L46,70 L49,62 L59,62 L62,70 L68,70 L54,38 Z M51,57 L54,48 L57,57 Z" />
+    <!-- Center dot -->
+    <path
+        android:fillColor="@color/aria_cyan"
+        android:pathData="M54,54 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" />
+</vector>

@@ -25,7 +25,7 @@ class AriaBridgeServer(
         return try {
             when {
                 uri.startsWith("aria/status") -> jsonResponse(controller.status())
-                uri.startsWith("aria/device_info") -> jsonResponse(controller.deviceInfo().toString())
+                uri.startsWith("aria/device_info") -> jsonResponse(controller.deviceInfo())
                 uri.startsWith("aria/toggle_wifi") -> {
                     val state = params["state"]?.firstOrNull() ?: "on"
                     jsonResponse(controller.toggleWifi(state))
