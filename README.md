@@ -242,16 +242,90 @@ brain:
   model: llama3
 ```
 
-## Phone Companion App
+## Phone Companion App (Android)
 
-To enable full phone control (wifi, bluetooth, flashlight, etc.), the ARIA companion app bridges commands from the web dashboard to your phone's hardware. The companion app runs a local HTTP bridge that ARIA's `phone_control` skill detects automatically.
+The ARIA companion app is a native Android app that bridges commands from the web dashboard to your phone's hardware. It runs a local HTTP server on port 8420 that the `phone_control` skill auto-detects.
 
-Install the companion app on your Android phone, grant the necessary permissions, and ARIA will be able to:
-- Toggle wifi, bluetooth, airplane mode, flashlight, do-not-disturb
-- Set brightness and volume
-- Read battery status
-- Send notifications, set alarms, take screenshots
-- Open apps and manage files
+### What it does
+- **Foreground service**: Keeps the bridge running even when the app is in the background or screen is off
+- **HTTP bridge (port 8420)**: NanoHTTPD server that the ARIA web server connects to for device control
+- **Background voice**: Android `SpeechRecognizer` listens for the "ARIA" wake word, then forwards commands to the ARIA web server
+- **File access**: Full file system operations (list, read, write, move, copy, delete, search)
+- **Boot receiver**: Auto-starts the bridge service when the phone boots
+
+### Device control capabilities
+| Command | Action |
+|---------|--------|
+| "turn on/off wifi" | Toggle wifi |
+| "turn on/off bluetooth" | Toggle bluetooth |
+| "turn on/off airplane mode" | Toggle airplane mode |
+| "turn on/off flashlight" | Toggle camera flash (torch) |
+| "turn on/off do not disturb" | Toggle DND |
+| "set phone brightness to 50%" | Set screen brightness (0-255) |
+| "set phone volume to 70%" | Set media volume |
+| "phone battery" | Read battery level + charging status |
+| "notify 'title' with 'message'" | Send a notification |
+| "set alarm for 7:30" | Set an alarm via AlarmClock intent |
+| "open app com.twitter.android" | Launch an app by package name |
+| "open https://example.com" | Open a URL in the browser |
+| "phone device info" | Get model, Android version, etc. |
+
+### File operations (via bridge)
+| Command | Action |
+|---------|--------|
+| "list files in /sdcard/Downloads" | List directory contents |
+| "read file /sdcard/notes.txt" | Read file content |
+| "write 'hello' to /sdcard/notes.txt" | Write/create a file |
+| "move file /sdcard/a.txt to /sdcard/b.txt" | Move/rename a file |
+| "copy file /sdcard/a.txt to /sdcard/b.txt" | Copy a file |
+| "delete file /sdcard/trash.txt" | Delete a file |
+| "search for 'report' in /sdcard/Documents" | Search for files by name |
+
+### Build the companion app
+
+The companion app source is in the `android/` directory. Build it with Android Studio or Gradle:
+
+```bash
+cd android
+
+# Build debug APK (requires Android SDK + JDK 17)
+./gradlew assembleDebug
+
+# The APK will be at:
+# app/build/outputs/apk/debug/app-debug.apk
+```
+
+Or open the `android/` folder in [Android Studio](https://developer.android.com/studio), connect your phone, and click Run.
+
+### Install the companion app
+
+```bash
+# Enable USB debugging on your phone, then:
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
+
+Or copy the APK to your phone and tap to install (enable "Install from unknown sources" first).
+
+### Required permissions
+The app requests these permissions at runtime:
+- **Microphone** (RECORD_AUDIO) -- for background wake word detection
+- **Camera** (CAMERA) -- for flashlight control
+- **All files access** (MANAGE_EXTERNAL_STORAGE) -- for file operations
+- **Write settings** (WRITE_SETTINGS) -- for brightness control
+- **Notifications** (POST_NOTIFICATIONS) -- for Android 13+
+- **Bluetooth connect** -- for bluetooth toggle
+- **Location** -- for foreground service type
+
+Grant all permissions in the app, then tap **START ARIA BRIDGE**.
+
+### How it works
+
+1. The companion app starts a foreground service that runs an HTTP server on port 8420
+2. The ARIA web server's `phone_control` skill probes `127.0.0.1:8420/aria/status` to detect the bridge
+3. When you say "ARIA, turn on wifi", the companion app's voice service detects the wake word
+4. The voice service forwards the command to the ARIA web server's `/api/chat` endpoint
+5. ARIA processes the command through skills and returns a response
+6. The response is shown as a notification on your phone
 
 ## License
 

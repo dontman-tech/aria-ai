@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- ARIA Logo / Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="ARIA"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:textColor="@color/aria_cyan"
+            android:letterSpacing="0.1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            android:text="Advanced Reasoning &amp; Intelligent Assistant"
+            android:textSize="14sp"
+            android:textColor="@color/aria_gray" />
+
+        <!-- Status display -->
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:padding="16dp"
+            android:background="@color/aria_bg_dark"
+            android:text="Initializing..."
+            android:textColor="@color/aria_text"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
+
+        <!-- Voice listening toggle -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/voiceSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:checked="false"
+            android:text="Background voice listening (wake word 'ARIA')"
+            android:textColor="@color/aria_text"
+            android:textSize="14sp" />
+
+        <!-- Start button -->
+        <Button
+            android:id="@+id/startButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="12dp"
+            android:text="START ARIA BRIDGE"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/aria_cyan"
+            android:textColor="@color/aria_bg_dark" />
+
+        <!-- Stop button -->
+        <Button
+            android:id="@+id/stopButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="24dp"
+            android:text="STOP ARIA BRIDGE"
+            android:textSize="16sp"
+            android:enabled="false"
+            android:backgroundTint="@color/aria_red"
+            android:textColor="@color/aria_text" />
+
+        <!-- Permission buttons -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/aria_bg_light" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="PERMISSIONS"
+            android:textColor="@color/aria_gray"
+            android:textSize="12sp"
+            android:letterSpacing="0.15" />
+
+        <Button
+            android:id="@+id/permButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:text="Grant All Permissions"
+            android:textSize="13sp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+        <Button
+            android:id="@+id/storagePermButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:text="Grant File Access (All Files)"
+            android:textSize="13sp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+        <Button
+            android:id="@+id/settingsPermButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="32dp"
+            android:text="Grant Write Settings (Brightness)"
+            android:textSize="13sp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+        <!-- Info text -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="The ARIA bridge runs a local HTTP server on port 8420. The ARIA web dashboard connects to this bridge to control your phone. Make sure the ARIA web server (python -m aria.ui.web) is running for full functionality."
+            android:textColor="@color/aria_gray"
+            android:textSize="12sp"
+            android:lineSpacingExtra="3dp" />
+
+    </LinearLayout>
+</ScrollView>

@@ -33,9 +33,11 @@ class PhoneControlSkill(Skill):
         r"\b(phone )?battery\b",
         r"\b(set phone volume|phone volume)\b",
         r"\b(do not disturb|dnd)\b",
-        r"\b(phone|device) (info|status|info|temperature)\b",
+        r"\b(phone|device) (info|status|temperature)\b",
         r"\b(send notification|notify)\b",
-        r"\b(open (app|application))\b.*\bon (my )?phone\b",
+        r"\b(open|launch) (app|application)\b",
+        r"\bopen\s+https?://\S+\b",
+        r"\bopen\s+[\w.-]+\.\w{2,}\b",
         r"\b(take a (screenshot|photo))\b",
         r"\b(set (an )?alarm)\b",
     ]
@@ -43,7 +45,7 @@ class PhoneControlSkill(Skill):
         "wifi", "wi-fi", "bluetooth", "flashlight", "torch", "airplane mode",
         "phone battery", "phone brightness", "do not disturb", "dnd",
         "phone status", "device info", "send notification", "take screenshot",
-        "set alarm", "open app on phone",
+        "set alarm", "open app", "open url",
     ]
 
     def __init__(self) -> None:
@@ -117,6 +119,10 @@ class PhoneControlSkill(Skill):
             return self._set_volume(text)
         if "phone status" in lower or "device info" in lower or "device status" in lower or "phone info" in lower:
             return self._device_info()
+        if "open app" in lower or "launch app" in lower:
+            return self._open_app(text)
+        if "open " in lower and ("http" in lower or ".com" in lower or ".org" in lower):
+            return self._open_url(text)
 
         return SkillResult(success=False, message="I can control wifi, bluetooth, brightness, flashlight, volume, battery, notifications, alarms, and more on your phone, Boss. What do you need?")
 
@@ -168,7 +174,7 @@ class PhoneControlSkill(Skill):
                 return SkillResult(success=True, message=f"Battery at {pct:.0f}%, {plugged}, Boss.")
             except ImportError:
                 return SkillResult(success=False, message="I can't read the battery without the companion app or psutil, Boss.")
-        pct = result.get("percent", "?")
+        pct = result.get("level", result.get("percent", "?"))
         charging = "charging" if result.get("charging") else "not charging"
         return SkillResult(success=True, message=f"Phone battery at {pct}%, {charging}, Boss.", data=result)
 
@@ -216,8 +222,28 @@ class PhoneControlSkill(Skill):
             }
             return SkillResult(success=True, message=f"Device: {info['platform']} on {info['node']}, Boss.", data=info)
         model = result.get("model", "Unknown")
-        os_ver = result.get("os_version", "")
+        os_ver = result.get("android_version", result.get("os_version", ""))
         return SkillResult(success=True, message=f"Device: {model}, OS {os_ver}, Boss.", data=result)
+
+    def _open_app(self, text: str) -> SkillResult:
+        match = re.search(r"(?:open|launch)\s+app\s+(\S+)", text, re.IGNORECASE)
+        if match:
+            pkg = match.group(1).strip("'\"")
+            result = self._call_bridge("open_app", {"package": pkg})
+            if result is None:
+                return self._no_bridge_response(f"Open app {pkg}")
+            return SkillResult(success=True, message=f"Opening {pkg}, Boss.", data=result)
+        return SkillResult(success=False, message="Which app should I open, Boss?")
+
+    def _open_url(self, text: str) -> SkillResult:
+        match = re.search(r"https?://\S+|[\w.-]+\.\w{2,}(?:/\S*)?", text)
+        if match:
+            url = match.group(0)
+            result = self._call_bridge("open_url", {"url": url})
+            if result is None:
+                return self._no_bridge_response(f"Open {url}")
+            return SkillResult(success=True, message=f"Opening {url}, Boss.", data=result)
+        return SkillResult(success=False, message="Which URL should I open, Boss?")
 
     def _no_bridge_response(self, action: str) -> SkillResult:
         """Response when the phone companion bridge is not available."""

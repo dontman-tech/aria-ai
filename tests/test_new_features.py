@@ -114,6 +114,18 @@ class TestPhoneControl:
         skill = PhoneControlSkill()
         assert skill.matches("phone battery")
 
+    def test_skill_matches_open_app(self):
+        skill = PhoneControlSkill()
+        assert skill.matches("open app com.twitter.android")
+
+    def test_skill_matches_open_url(self):
+        skill = PhoneControlSkill()
+        assert skill.matches("open https://example.com on my phone")
+
+    def test_skill_matches_device_info(self):
+        skill = PhoneControlSkill()
+        assert skill.matches("phone device info")
+
     def test_no_bridge_returns_message(self):
         skill = PhoneControlSkill()
         skill._bridge_url = None  # force no bridge
