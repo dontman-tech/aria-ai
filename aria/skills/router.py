@@ -35,8 +35,10 @@ class SkillRouter:
         from aria.skills.wiki import WikiSkill
         from aria.skills.memory_skill import MemorySkill
         from aria.skills.joke import JokeSkill
+        from aria.skills.phone_control import PhoneControlSkill
 
         for skill_cls in [
+            PhoneControlSkill,
             SystemControlSkill,
             TimeDateSkill,
             CalculatorSkill,

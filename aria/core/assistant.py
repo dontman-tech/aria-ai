@@ -71,7 +71,56 @@ class ARIA:
 
         self._running = False
         self._voice_mode = False
+        self._killed = False  # Kill switch flag
         logger.info("ARIA initialized. Brain: %s, Voice STT: %s", self.brain.available, self.stt is not None and self.stt.available)
+
+    @property
+    def killed(self) -> bool:
+        """True if the kill switch has been activated."""
+        return self._killed
+
+    def kill(self) -> str:
+        """Activate the kill switch -- shuts down ARIA immediately."""
+        self._killed = True
+        self._running = False
+        logger.warning("KILL SWITCH ACTIVATED -- ARIA shutting down")
+        try:
+            self.tts.close()
+        except Exception:
+            pass
+        self.memory._save()
+        return "Kill switch activated. ARIA shutting down, Boss."
+
+    def set_api_key(self, provider: str, api_key: str, model: str | None = None) -> dict:
+        """Set an API key at runtime (called from the dashboard).
+
+        Persists the key and reconfigures the brain.
+        """
+        self.config.save_runtime_key(provider, api_key)
+        if model:
+            self.config.brain.model = model
+        online = self.brain.reconfigure(
+            api_key=api_key,
+            model=model,
+            provider=provider,
+        )
+        logger.info("API key set for %s, brain online: %s", provider, online)
+        return {
+            "provider": provider,
+            "model": self.config.brain.model,
+            "online": online,
+        }
+
+    def get_config_status(self) -> dict:
+        """Return current configuration status for the dashboard."""
+        return {
+            "provider": self.config.brain.provider,
+            "model": self.config.brain.model,
+            "brain_online": self.brain.available,
+            "has_api_key": bool(self.config.get_api_key()),
+            "voice_available": bool(self.stt and self.stt.available),
+            "killed": self._killed,
+        }
 
     def _setup_logging(self) -> None:
         level = getattr(logging, self.config.log_level.upper(), logging.INFO)
@@ -104,6 +153,10 @@ class ARIA:
         if not user_input:
             return "I didn't catch that, Boss."
 
+        # Kill switch -- refuse to process if killed
+        if self._killed:
+            return "ARIA has been shut down via the kill switch, Boss. Restart the service to reactivate."
+
         # Store in memory
         self.memory.add("user", user_input)
 
@@ -112,6 +165,10 @@ class ARIA:
         if any(lower.startswith(cmd) or lower == cmd for cmd in ["exit", "quit", "bye", "goodbye"]):
             self._running = False
             return "Goodbye, Boss. ARIA signing off."
+
+        # Kill switch via voice/text command
+        if lower in ("shut down", "shutdown", "kill switch", "kill aria", "terminate", "shut aria down"):
+            return self.kill()
 
         if lower in ("help", "what can you do", "capabilities", "what can you do?"):
             return self._help_text()
@@ -149,11 +206,12 @@ class ARIA:
             "calculator": "Do math: 'calculate 15 times 3', 'what is the square root of 144'",
             "web_search": "Search the web: 'search for quantum computing'",
             "weather": "Get weather: 'weather in Tokyo'",
-            "files": "List, find, read, and create files",
+            "files": "List, find, read, create, move, copy, edit, and delete files",
             "apps": "Open apps and websites: 'open chrome', 'go to github.com'",
             "wiki": "Look things up: 'who is Ada Lovelace', 'what is quantum entanglement'",
             "memory": "Remember facts: 'my name is Tony', 'what's my name'",
             "joke": "Tell a joke",
+            "phone_control": "Control your phone: wifi, bluetooth, brightness, open apps, notifications",
         }
         for s in skills:
             desc = skill_descriptions.get(s, "")

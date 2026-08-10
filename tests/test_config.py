@@ -11,7 +11,8 @@ def test_default_config():
     """Config creates with sensible defaults."""
     cfg = Config()
     assert cfg.voice.wake_word == "aria"
-    assert cfg.brain.provider == "openai"
+    assert cfg.brain.provider == "deepseek"
+    assert cfg.brain.model == "deepseek-chat"
     assert cfg.personality.name == "ARIA"
     assert cfg.log_level == "INFO"
 
@@ -70,4 +71,4 @@ def test_config_defaults_preserved():
     cfg = Config.from_dict({"voice": {"wake_word": "test"}})
     assert cfg.voice.wake_word == "test"
     assert cfg.voice.voice_rate == 175  # default
-    assert cfg.brain.provider == "openai"  # default
+    assert cfg.brain.provider == "deepseek"  # default

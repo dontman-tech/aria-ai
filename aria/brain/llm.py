@@ -1,6 +1,7 @@
 """LLM brain for ARIA - powers natural conversation.
 
 Supports multiple providers with graceful fallback:
+  - DeepSeek (deepseek-chat / deepseek-reasoner, OpenAI-compatible API)
   - OpenAI (GPT models)
   - Anthropic (Claude models)
   - Local (any OpenAI-compatible endpoint, e.g. Ollama, LM Studio)
@@ -16,6 +17,9 @@ from typing import Any, Optional
 from aria.core.config import BrainConfig, PersonalityConfig
 
 logger = logging.getLogger(__name__)
+
+# Providers that use the OpenAI-compatible Chat Completions API
+OPENAI_COMPATIBLE = {"deepseek", "openai", "local"}
 
 
 class Brain:
@@ -33,27 +37,25 @@ class Brain:
 
     def _init_client(self) -> None:
         provider = self.config.provider
-        if provider == "openai":
-            try:
-                from openai import OpenAI
-
-                api_key = os.environ.get(self.config.api_key_env, "")
-                if not api_key:
-                    logger.warning("No %s set, brain will use echo fallback", self.config.api_key_env)
-                    self.config.provider = "echo"
-                    return
-                self._client = OpenAI(api_key=api_key, base_url=self.config.base_url)
-                logger.info("Brain provider: OpenAI (%s)", self.config.model)
-            except ImportError:
-                logger.warning("openai package not installed, using echo fallback")
-                self.config.provider = "echo"
+        if provider == "deepseek":
+            self._init_openai_compatible(
+                provider_name="DeepSeek",
+                default_url="https://api.deepseek.com/v1",
+                env_var="DEEPSEEK_API_KEY",
+            )
+        elif provider == "openai":
+            self._init_openai_compatible(
+                provider_name="OpenAI",
+                default_url=None,
+                env_var="OPENAI_API_KEY",
+            )
         elif provider == "anthropic":
             try:
                 import anthropic
 
-                api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+                api_key = self._resolve_key("ANTHROPIC_API_KEY")
                 if not api_key:
-                    logger.warning("No ANTHROPIC_API_KEY set, brain will use echo fallback")
+                    logger.warning("No Anthropic API key set, brain will use echo fallback")
                     self.config.provider = "echo"
                     return
                 self._client = anthropic.Anthropic(api_key=api_key)
@@ -62,22 +64,66 @@ class Brain:
                 logger.warning("anthropic package not installed, using echo fallback")
                 self.config.provider = "echo"
         elif provider == "local":
-            try:
-                from openai import OpenAI
-
-                self._client = OpenAI(
-                    api_key=os.environ.get("LOCAL_LLM_KEY", "not-needed"),
-                    base_url=self.config.base_url or "http://localhost:11434/v1",
-                )
-                logger.info("Brain provider: local (%s)", self.config.base_url)
-            except ImportError:
-                logger.warning("openai package not installed, using echo fallback")
-                self.config.provider = "echo"
+            self._init_openai_compatible(
+                provider_name="local",
+                default_url="http://localhost:11434/v1",
+                env_var="LOCAL_LLM_KEY",
+                allow_no_key=True,
+            )
         elif provider == "echo":
             logger.info("Brain provider: echo (offline test mode)")
         else:
             logger.warning("Unknown provider '%s', using echo fallback", provider)
             self.config.provider = "echo"
+
+    def _init_openai_compatible(
+        self,
+        provider_name: str,
+        default_url: str | None,
+        env_var: str,
+        allow_no_key: bool = False,
+    ) -> None:
+        """Initialize an OpenAI-compatible client (DeepSeek, OpenAI, local)."""
+        try:
+            from openai import OpenAI
+        except ImportError:
+            logger.warning("openai package not installed, using echo fallback")
+            self.config.provider = "echo"
+            return
+
+        api_key = self._resolve_key(env_var)
+        if not api_key:
+            if allow_no_key:
+                api_key = "not-needed"
+            else:
+                logger.warning("No %s set, brain will use echo fallback", env_var)
+                self.config.provider = "echo"
+                return
+
+        base_url = self.config.base_url or default_url
+        self._client = OpenAI(api_key=api_key, base_url=base_url)
+        logger.info("Brain provider: %s (%s)", provider_name, self.config.model)
+
+    def _resolve_key(self, env_var: str) -> str:
+        """Resolve API key: runtime-stored (dashboard) first, then env var."""
+        if self.config.api_key:
+            return self.config.api_key
+        return os.environ.get(env_var, "")
+
+    def reconfigure(self, api_key: str | None = None, model: str | None = None, provider: str | None = None) -> bool:
+        """Reconfigure the brain at runtime (e.g. after dashboard API key entry).
+
+        Returns True if the brain is now online.
+        """
+        if api_key is not None:
+            self.config.api_key = api_key
+        if model is not None:
+            self.config.model = model
+        if provider is not None:
+            self.config.provider = provider
+        self._client = None
+        self._init_client()
+        return self.available
 
     def respond(self, messages: list[dict[str, str]]) -> str:
         """Generate a response given the conversation messages.
@@ -93,7 +139,7 @@ class Brain:
             return self._echo_response(messages)
 
         try:
-            if provider == "openai" or provider == "local":
+            if provider in OPENAI_COMPATIBLE:
                 return self._respond_openai(messages)
             elif provider == "anthropic":
                 return self._respond_anthropic(messages)
@@ -155,11 +201,11 @@ class Brain:
         if lower.endswith("?"):
             return (
                 "I'm currently running in offline mode without a connected language model, "
-                "so I can't give you a full answer to that. Set the OPENAI_API_KEY environment "
-                "variable and I'll be able to converse naturally. In the meantime, I can still "
-                "run commands and skills for you."
+                "so I can't give you a full answer to that. Enter your DeepSeek API key "
+                "in the dashboard settings and I'll be able to converse naturally. "
+                "In the meantime, I can still run commands and skills for you."
             )
-        return f"Understood, Boss. I've noted: \"{last_user}\". (Offline mode — connect an LLM for full conversation.)"
+        return f"Understood, Boss. I've noted: \"{last_user}\". (Offline mode — connect a DeepSeek API key for full conversation.)"
 
     @property
     def available(self) -> bool:

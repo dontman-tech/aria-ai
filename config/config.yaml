@@ -1,6 +1,7 @@
 # ARIA Configuration
-# Copy this file to config.yaml and customize as needed.
-# Environment variables can override API keys (e.g. OPENAI_API_KEY).
+# Environment variables can override API keys (e.g. DEEPSEEK_API_KEY).
+# You can also enter your API key on the dashboard (Settings tab) —
+# it will be saved locally and used at runtime.
 
 # Voice input/output settings
 voice:
@@ -21,13 +22,13 @@ voice:
   dynamic_energy: true
 
 # LLM / conversation brain
+# Default provider: deepseek (OpenAI-compatible API)
+# Other providers: openai, anthropic, local, echo (offline test mode)
 brain:
-  # Provider: openai, anthropic, local, echo
-  # echo = offline test mode (no API key needed)
-  provider: openai
-  model: gpt-4o-mini
-  api_key_env: OPENAI_API_KEY
-  # base_url: http://localhost:11434/v1  # for local LLMs (Ollama)
+  provider: deepseek
+  model: deepseek-chat        # or deepseek-reasoner for advanced reasoning
+  api_key_env: DEEPSEEK_API_KEY
+  base_url: https://api.deepseek.com/v1
   temperature: 0.7
   max_tokens: 1024
   memory_limit: 20       # past exchanges kept in context
@@ -46,3 +47,4 @@ personality:
 # Logging
 log_level: INFO
 data_dir: ./data
+

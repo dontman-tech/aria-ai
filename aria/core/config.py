@@ -46,14 +46,16 @@ class VoiceConfig:
 class BrainConfig:
     """LLM / conversation brain settings."""
 
-    provider: str = "openai"  # openai, anthropic, local, echo
-    model: str = "gpt-4o-mini"
-    api_key_env: str = "OPENAI_API_KEY"
-    base_url: str | None = None
+    provider: str = "deepseek"  # deepseek, openai, anthropic, local, echo
+    model: str = "deepseek-chat"
+    api_key_env: str = "DEEPSEEK_API_KEY"
+    base_url: str | None = "https://api.deepseek.com/v1"
     temperature: float = 0.7
     max_tokens: int = 1024
     system_prompt: str = ""
     memory_limit: int = 20  # number of past exchanges to keep in context
+    # Runtime API key (set via dashboard, takes priority over env var)
+    api_key: str = ""
 
 
 @dataclass
@@ -80,6 +82,8 @@ class Config:
     personality: PersonalityConfig = field(default_factory=PersonalityConfig)
     log_level: str = "INFO"
     data_dir: str = str(DATA_DIR)
+    # Runtime-stored API keys entered via the dashboard (persisted to secrets.json)
+    runtime_api_keys: dict = field(default_factory=dict)
 
     @classmethod
     def from_file(cls, path: str | Path | None = None) -> "Config":
@@ -89,7 +93,9 @@ class Config:
         if config_path.exists() and yaml is not None:
             with open(config_path) as f:
                 data = yaml.safe_load(f) or {}
-        return cls.from_dict(data)
+        cfg = cls.from_dict(data)
+        cfg._load_runtime_secrets()
+        return cfg
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Config":
@@ -114,6 +120,43 @@ class Config:
             if k in data:
                 setattr(cfg, k, data[k])
         return cfg
+
+    def _secrets_path(self) -> Path:
+        return Path(self.data_dir) / "secrets.json"
+
+    def _load_runtime_secrets(self) -> None:
+        """Load persisted runtime API keys (entered via dashboard)."""
+        path = self._secrets_path()
+        if path.exists():
+            try:
+                import json
+
+                with open(path) as f:
+                    self.runtime_api_keys = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                self.runtime_api_keys = {}
+        # Apply runtime key to brain config if present
+        if self.runtime_api_keys.get("deepseek"):
+            self.brain.api_key = self.runtime_api_keys["deepseek"]
+
+    def save_runtime_key(self, provider: str, api_key: str) -> None:
+        """Persist a runtime API key entered via the dashboard."""
+        self.runtime_api_keys[provider] = api_key
+        if provider == "deepseek":
+            self.brain.api_key = api_key
+        Path(self.data_dir).mkdir(parents=True, exist_ok=True)
+        import json
+
+        with open(self._secrets_path(), "w") as f:
+            json.dump(self.runtime_api_keys, f, indent=2)
+
+    def get_api_key(self) -> str:
+        """Resolve the active API key: runtime-stored first, then env var."""
+        if self.brain.api_key:
+            return self.brain.api_key
+        import os
+
+        return os.environ.get(self.brain.api_key_env, "")
 
 
 def load_config(path: str | Path | None = None) -> Config:
