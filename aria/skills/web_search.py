@@ -33,7 +33,8 @@ class WebSearchSkill(Skill):
             return result
 
         # Fallback: provide a search URL
-        url = f"https://duckduckgo.com/?q={re.sub(r'\\s+', '+', query)}"
+        search_url = re.sub(r"\s+", "+", query)
+        url = f"https://duckduckgo.com/?q={search_url}"
         return SkillResult(
             success=True,
             message=f"I couldn't get a direct answer, but here's a search for '{query}': {url}",
