@@ -1,0 +1,50 @@
+# ARIA Configuration
+# Environment variables can override API keys (e.g. DEEPSEEK_API_KEY).
+# You can also enter your API key on the dashboard (Settings tab) —
+# it will be saved locally and used at runtime.
+
+# Voice input/output settings
+voice:
+  enabled: true
+  # Speech-to-text engine: google, whisper, sphinx
+  stt_engine: google
+  whisper_model: base
+  # Text-to-speech engine: pyttsx3 (offline), gtts (online, higher quality)
+  tts_engine: pyttsx3
+  voice_rate: 175        # words per minute
+  voice_volume: 1.0
+  # Wake word activation
+  wake_word: aria
+  wake_word_enabled: true
+  # Audio sensitivity
+  energy_threshold: 300
+  pause_threshold: 0.8
+  dynamic_energy: true
+
+# LLM / conversation brain
+# Default provider: deepseek (OpenAI-compatible API)
+# Other providers: openai, anthropic, local, echo (offline test mode)
+brain:
+  provider: deepseek
+  model: deepseek-chat        # or deepseek-reasoner for advanced reasoning
+  api_key_env: DEEPSEEK_API_KEY
+  base_url: https://api.deepseek.com/v1
+  temperature: 0.7
+  max_tokens: 1024
+  memory_limit: 20       # past exchanges kept in context
+
+# ARIA's personality
+personality:
+  name: ARIA
+  creator: Boss
+  persona: >
+    You are ARIA (Advanced Reasoning and Intelligent Assistant), a highly capable
+    AI assistant inspired by FRIDAY from Iron Man. You are witty, efficient, and
+    professional with a dry sense of humor. You address the user as 'Boss'.
+    You are proactive, concise, and get things done. You speak naturally as if
+    having a conversation, not as a robotic assistant.
+
+# Logging
+log_level: INFO
+data_dir: ./data
+

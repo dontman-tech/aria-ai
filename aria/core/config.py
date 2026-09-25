@@ -16,8 +16,26 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None  # type: ignore
 
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "config.yaml"
-DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+# Packaged default config (inside the aria package, so it works when
+# pip-installed, not just from a source checkout).
+_PACKAGED_CONFIG = Path(__file__).resolve().parent.parent / "config.yaml"
+
+# User-facing locations: user overrides live in ~/.aria, runtime data too.
+_USER_ARIA_DIR = Path.home() / ".aria"
+_USER_CONFIG_PATH = _USER_ARIA_DIR / "config.yaml"
+
+# Prefer a source checkout's config/ dir if we're running from one (dev mode),
+# then a user override, then the packaged default.
+def _resolve_default_config() -> Path:
+    dev_config = _PACKAGED_CONFIG.parent.parent / "config" / "config.yaml"
+    if dev_config.exists() and dev_config != _PACKAGED_CONFIG:
+        return dev_config  # running from a source checkout
+    if _USER_CONFIG_PATH.exists():
+        return _USER_CONFIG_PATH
+    return _PACKAGED_CONFIG
+
+DEFAULT_CONFIG_PATH = _resolve_default_config()
+DATA_DIR = _USER_ARIA_DIR / "data"
 
 
 @dataclass

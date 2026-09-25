@@ -61,3 +61,6 @@ include = ["aria*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+aria = ["config.yaml"]
