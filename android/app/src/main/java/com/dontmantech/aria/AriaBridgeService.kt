@@ -39,6 +39,9 @@ class AriaBridgeService : Service() {
 
         // Start voice listening if enabled
         if (voiceEnabled) {
+            voiceController?.tts = AriaTts(this) { speaking ->
+                // (Hook for UI: ARIA is currently speaking)
+            }
             voiceController?.startListening()
         }
 
@@ -77,6 +80,7 @@ class AriaBridgeService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        voiceController?.tts?.shutdown()
         voiceController?.stopListening()
         bridgeServer?.stopBridge()
         Log.i(TAG, "Service destroyed")

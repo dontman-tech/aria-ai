@@ -28,6 +28,13 @@ class VoiceController(private val context: Context) {
     private var listening = false
     private var ariaServerUrl = "http://127.0.0.1:5000"
 
+    /** Speaks ARIA's responses aloud; attached by the service when voice is enabled. */
+    var tts: AriaTts? = null
+
+    init {
+        instance = this
+    }
+
     fun startListening() {
         if (listening) return
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
@@ -50,7 +57,7 @@ class VoiceController(private val context: Context) {
         Log.i(TAG, "Voice wake word listening stopped")
     }
 
-    private fun startRecognition() {
+    fun startRecognition() {
         if (!listening) return
         val intent = android.content.Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -110,9 +117,18 @@ class VoiceController(private val context: Context) {
                 ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 ?.firstOrNull()
                 ?.lowercase() ?: ""
-            // Quick check for wake word in partial results
-            if (partial.contains("aria") && !listening) {
-                onResults(partialResults)
+            // Wake word in partial results: capture the command right away so
+            // "aria, what's the weather" works without waiting for a full
+            // result cycle. (The old check tested !listening, which is always
+            // false here — dead code.)
+            if (partial.contains("aria")) {
+                val command = partial.substringAfter("aria").trim()
+                if (command.isNotEmpty()) {
+                    Log.i(TAG, "Wake word detected (partial), command: $command")
+                    CoroutineScope(Dispatchers.IO).launch {
+                        sendToAria(context, command)
+                    }
+                }
             }
         }
 
@@ -121,6 +137,9 @@ class VoiceController(private val context: Context) {
 
     companion object {
         private const val TAG = "ARIA-Voice"
+
+        /** Latest live controller, so static paths (sendToAria) can reach TTS. */
+        var instance: VoiceController? = null
 
         /**
          * Send a voice command to the ARIA web server.
@@ -148,15 +167,37 @@ class VoiceController(private val context: Context) {
 
                     // Show ARIA's response as a notification
                     if (success) {
-                        showAriaResponseNotification(context, ariaResponse)
-                    }
-                    response
+                        if (success) {
+                            showAriaResponseNotification(context, ariaResponse)
+                            // Complete the voice loop: mic -> brain -> spoken reply.
+                            speakResponse(ariaResponse)
+                        }
+                        response
                 } else {
                     """{"success":false,"error":"ARIA server returned $responseCode"}"""
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send command to ARIA server", e)
                 """{"success":false,"error":"ARIA server not reachable. Is the web server running?"}"""
+            }
+        }
+
+        /**
+         * Speak [response] through the live TTS instance if one is attached.
+         * While ARIA talks we pause recognition so the mic doesn't hear her
+         * own voice, then resume shortly after speech ends.
+         */
+        private fun speakResponse(response: String) {
+            val controller = instance ?: return
+            val tts = controller.tts ?: return
+            if (controller.listening) {
+                controller.speechRecognizer?.stopListening()
+            }
+            tts.speak(response)
+            if (controller.listening) {
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    if (controller.listening) controller.startRecognition()
+                }, 1500)
             }
         }
 
